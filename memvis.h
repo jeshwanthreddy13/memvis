@@ -18,9 +18,11 @@
  *
  * SUPPORTED VISUALISATIONS AS OF NOW
  *  1. INTEGER
- *  2. INTEGER ARRAY
- *  3. POINTER_TO_POINTER_TO_INTEGER
- *  4. ARRAY_OF_N_POINTER_TO_INTEGER
+ *  2. CHARACTER
+ *  3. INTEGER ARRAY
+ *  4. CHARACTER ARRAY
+ *  5. POINTER_TO_POINTER_TO_INTEGER
+ *  6. ARRAY_OF_N_POINTER_TO_INTEGER
  *
  */
 
@@ -35,24 +37,26 @@
  **/
 typedef enum{
     MEM_SUCCESS,
+    MEM_ERR_NULL,
     MEM_ERR_SET_GLOB_ARR_FAILURE,
     MEM_ERR_UNIMPLEMENTED,
-    MEM_ERR_UNINITIALIZED,
+    MEM_ERR_NONE,
     MEM_ERR_INVALID_TYPE
 }ERROR_TYPE_t;
 
 /**
- All types of possible types that memvis currently supports
+ All types of possible types that memvis supports or will support in the future
  **/
 typedef enum {
     CUSTOM,
     INTEGER,
-    CHARACTER,
+    CHAR,
     DOUBLE,
     INTEGER_ARRAY,
+    CHAR_ARRAY,
     ADDRESS,
     POINTER_TO_INTEGER,
-    POINTER_TO_CHARACTER,
+    POINTER_TO_CHAR,
     POINTER_TO_DOUBLE,
     POINTER_TO_POINTER_TO_INTEGER,
     ARRAY_OF_N_POINTER_TO_INTEGER,
@@ -60,48 +64,117 @@ typedef enum {
 }VAR_TYPE_t;
 
 /**
- Used to index the required fields from array gVarTypeArr
+ Used to index the required fields from array gVarInfoArr
  **/
 typedef enum {
+    BASE_VAR_TYPE_PRINT_STRING,
     VAR_TYPE_PRINT_STRING,
     CONVERSION_SPECIFIER
+}VAR_INFO_ARR_INDEXER_t;
+
+/**
+ Used to index the required fields from array gVarTypeArr
+ **/
+typedef enum{
+    VAR_TYPE,
+    BASE_VAR_TYPE
 }VAR_TYPE_ARR_INDEXER_t;
 
 /**
  Stores the required information after setting the type
  **/
-char *gVarTypeArr[GLOBAL_VAR_ARR_SIZE];
+char *gVarInfoArr[GLOBAL_VAR_ARR_SIZE];
+VAR_TYPE_t gVarTypeArr[GLOBAL_VAR_ARR_SIZE];
+size_t gVarSize = 0;
 
 ERROR_TYPE_t memvis(void*, VAR_TYPE_t, size_t);
 ERROR_TYPE_t memvis_ATP(int**, VAR_TYPE_t, size_t);
-ERROR_TYPE_t memvis_uint32(uint32_t*);
+ERROR_TYPE_t memvis_int(int*);
 ERROR_TYPE_t memvis_custom(void*, size_t);
 ERROR_TYPE_t memvis_array(void*, VAR_TYPE_t, int);
 
 
-ERROR_TYPE_t print_ContiguousBlocks(void *, VAR_TYPE_t, size_t);
+ERROR_TYPE_t PrintContiguousBlocks(void *, VAR_TYPE_t, size_t);
+ERROR_TYPE_t PrintOneByteBlocks(char *, VAR_TYPE_t, size_t);
 
 /**
- sets gVarTypeArr with respective values w.r.t type
+ sets gVarInfoArr with respective values w.r.t type
 
  varType => Expects VAR_TYPE_t variable
  **/
-ERROR_TYPE_t set_gVarTypeArr(VAR_TYPE_t varType){
+ERROR_TYPE_t set_gVarArrays(VAR_TYPE_t varType){
 
     if(varType >= INVALID_TYPE){
         printf("Error: Invalid Variable Type Passed!!, returning\n");
         return MEM_ERR_INVALID_TYPE;
     }
 
-    if(varType ==  POINTER_TO_INTEGER){
-        gVarTypeArr[VAR_TYPE_PRINT_STRING] = "Integer";
-        gVarTypeArr[CONVERSION_SPECIFIER] = "d";
-//        gVarTypeArr[VAR_TYPE] = INTEGER; TODO
+    if(varType == POINTER_TO_INTEGER){
+        gVarInfoArr[BASE_VAR_TYPE_PRINT_STRING] = "Integer";
+        gVarInfoArr[VAR_TYPE_PRINT_STRING] = "POINTER TO INTEGER";
+        gVarInfoArr[CONVERSION_SPECIFIER] = "d";
+        gVarTypeArr[VAR_TYPE] = POINTER_TO_INTEGER;
+        gVarTypeArr[BASE_VAR_TYPE] = INTEGER;
+        gVarSize = sizeof(int);
         return MEM_SUCCESS;
     }
 
+    else
+        if(varType == INTEGER){
+            gVarInfoArr[BASE_VAR_TYPE_PRINT_STRING] = "Integer";
+            gVarInfoArr[VAR_TYPE_PRINT_STRING] = "Integer";
+            gVarInfoArr[CONVERSION_SPECIFIER] = "d";
+            gVarTypeArr[VAR_TYPE] = INTEGER;
+            gVarTypeArr[BASE_VAR_TYPE] = gVarTypeArr[VAR_TYPE];
+            gVarSize = sizeof(int);
+            return MEM_SUCCESS;
+        }
+
+    else
+        if(varType == INTEGER_ARRAY){
+            gVarInfoArr[BASE_VAR_TYPE_PRINT_STRING] = "Integer";
+            gVarInfoArr[VAR_TYPE_PRINT_STRING] = "Integer Array";
+            gVarInfoArr[CONVERSION_SPECIFIER] = "d";
+            gVarTypeArr[VAR_TYPE] = INTEGER_ARRAY;
+            gVarTypeArr[BASE_VAR_TYPE] = INTEGER;
+            gVarSize = sizeof(int);
+            return MEM_SUCCESS;
+        }
+    else
+        if(varType == CHAR_ARRAY){
+            gVarInfoArr[BASE_VAR_TYPE_PRINT_STRING] = "Character";
+            gVarInfoArr[VAR_TYPE_PRINT_STRING] = "Character Array";
+            gVarInfoArr[CONVERSION_SPECIFIER] = "c";
+            gVarTypeArr[VAR_TYPE] = CHAR_ARRAY;
+            gVarTypeArr[BASE_VAR_TYPE] = CHAR;
+            gVarSize = sizeof(char);
+            return MEM_SUCCESS;
+        }
+
+    else
+        if(varType == CHAR){
+            gVarInfoArr[BASE_VAR_TYPE_PRINT_STRING] = "Character";
+            gVarInfoArr[VAR_TYPE_PRINT_STRING] = "Character";
+            gVarInfoArr[CONVERSION_SPECIFIER] = "c";
+            gVarTypeArr[VAR_TYPE] = CHAR;
+            gVarTypeArr[BASE_VAR_TYPE] = gVarTypeArr[VAR_TYPE];
+            gVarSize = sizeof(char);
+            return MEM_SUCCESS;
+        }
+
+    else
+        if(varType == ARRAY_OF_N_POINTER_TO_INTEGER){
+            gVarInfoArr[BASE_VAR_TYPE_PRINT_STRING] = "Integer";
+            gVarInfoArr[VAR_TYPE_PRINT_STRING] = "ARRAY_OF_N_POINTER_TO_INTEGER";
+            gVarInfoArr[CONVERSION_SPECIFIER] = "d";
+            gVarTypeArr[VAR_TYPE] = ARRAY_OF_N_POINTER_TO_INTEGER;
+            gVarTypeArr[BASE_VAR_TYPE] = INTEGER;
+            gVarSize = sizeof(char);
+            return MEM_SUCCESS;
+        }
+
     else{
-        gVarTypeArr[VAR_TYPE_PRINT_STRING] = "Integer"; // TBD - Temporary Hardcoded
+        gVarInfoArr[BASE_VAR_TYPE_PRINT_STRING] = "Integer"; // TBD - Temporary Hardcoded
         return MEM_SUCCESS;
     }                                               // To-be removed once architecture is confirmed
 
@@ -109,13 +182,14 @@ ERROR_TYPE_t set_gVarTypeArr(VAR_TYPE_t varType){
 }
 
 /**
- unsets/initializes gVarTypeArr to null
+ unsets/initializes gVarInfoArr to null
 
  void
  **/
-ERROR_TYPE_t unset_gVarTypeArr(){
+ERROR_TYPE_t unset_gVarArrays(){
     for(int i = 0; i < GLOBAL_VAR_ARR_SIZE; i++){
-        gVarTypeArr[i] = "";
+        gVarInfoArr[i] = "";
+        gVarTypeArr[i] = INVALID_TYPE;
     }
     return MEM_SUCCESS;
 }
@@ -135,10 +209,10 @@ ERROR_TYPE_t memvis_custom(void* customPlaceHolder, size_t typeSize){
  **/
 ERROR_TYPE_t memvis_ATP(int** placeHolder, VAR_TYPE_t varType, size_t _no_of_blocks_){ //ARRAY_OF_N_POINTER_TO_INTEGER
 
-    print_ContiguousBlocks(placeHolder, ADDRESS, _no_of_blocks_);
+    PrintContiguousBlocks(placeHolder, ADDRESS, _no_of_blocks_);
 
     for(int i = 0; i < _no_of_blocks_; i++){
-        printf("\n\nREPRESENTATION OF POINTER TO %s IN INDEX %d \n", gVarTypeArr[VAR_TYPE_PRINT_STRING], i);
+        printf("\n\nREPRESENTATION OF POINTER TO %s IN INDEX %d \n", gVarInfoArr[BASE_VAR_TYPE_PRINT_STRING], i);
         printf("++++++++++++++++++\n");
         printf("| %-15d|\n",*(*(placeHolder+i)));
         printf("++++++++++++++++++\n");
@@ -150,20 +224,22 @@ ERROR_TYPE_t memvis_ATP(int** placeHolder, VAR_TYPE_t varType, size_t _no_of_blo
 ERROR_TYPE_t memvis_array(void* placeHolder, VAR_TYPE_t var_type, int _no_of_blocks_){
 
     if(var_type == INTEGER_ARRAY){
-        return print_ContiguousBlocks(placeHolder, INTEGER, _no_of_blocks_);
+        return PrintContiguousBlocks(placeHolder, INTEGER, _no_of_blocks_);
+    }
+    if(var_type == CHAR_ARRAY){
+        return PrintContiguousBlocks(placeHolder, CHAR, _no_of_blocks_);
     }
 }
 
-ERROR_TYPE_t print_ContiguousBlocks(void *placeHolder, VAR_TYPE_t var_type, size_t _no_of_blocks_){
+ERROR_TYPE_t PrintOneByteBlocks(char *placeHolder, VAR_TYPE_t var_type, size_t _no_of_blocks_){
 
-    char fmt_val[10] = "| 0x%-15";
+    char fmt_val[8] = "| %-17x";
     char fmt_addr[9] = " %-18p";
-    size_t varSize = sizeof(int);// TODO - HardCoded to `int` as of now
+    size_t varSize = gVarSize;
     size_t pointSize = sizeof(void*);
 
-    fmt_val[9] = '\0';
-
     printf("|");
+    /*Printing the upper block boundary*/
     for(int i = 0; i < _no_of_blocks_; i++){
         printf("++++++++++++++++++|");
     }
@@ -171,16 +247,61 @@ ERROR_TYPE_t print_ContiguousBlocks(void *placeHolder, VAR_TYPE_t var_type, size
 
     /*Printing the values within the blocks*/
     for(int i = 0; i < _no_of_blocks_; i++){
+        printf(fmt_val, *(char *)(placeHolder+(i)));
+    }
+
+    /*Printing the lower block boundary*/
+    printf("|\n|");
+    for(int i = 0; i < _no_of_blocks_; i++){
+        printf("++++++++++++++++++|");
+    }
+    printf("\n");
+
+    /*Printing the address, 1 Byte Blocks*/
+    for(int i = 0; i < _no_of_blocks_; i++){
+        printf(fmt_addr, (((char**)placeHolder)+i));
+    }
+
+    printf("\n\n");
+    return MEM_SUCCESS;
+}
+
+ERROR_TYPE_t PrintContiguousBlocks(void *placeHolder, VAR_TYPE_t var_type, size_t _no_of_blocks_){
+
+    /*Assigning initially for printing pointer types*/
+    char fmt_val[8] = "| %-17p";
+    char fmt_addr[9] = " %-18p";
+    /*Assigning initially for printing pointer types*/
+    size_t varSize = sizeof(void*);
+    size_t pointSize = sizeof(void*);
+    /*Assigning data type values if not pointer type*/
+    if(var_type != ADDRESS){
+        fmt_val[6] = gVarInfoArr[CONVERSION_SPECIFIER][0];
+        varSize = gVarSize;
+    }
+
+    printf("|");
+    /*Printing the upper block boundary*/
+    for(int i = 0; i < _no_of_blocks_; i++){
+        printf("++++++++++++++++++|");
+    }
+    printf("\n");
+
+    /*Printing the values within the blocks may be address or values derefernced respectively*/
+    for(int i = 0; i < _no_of_blocks_; i++){
         switch(var_type){
             case ADDRESS:
-                printf("| %-17p", *(((int **)placeHolder)+i));
+                printf(fmt_val, *(((int **)placeHolder)+i));
                 break;
             case INTEGER:
-                printf("| %-17d", *(int *)(placeHolder+(i*varSize)));
+                printf(fmt_val, *(int *)(placeHolder+(i*sizeof(int))));
+                break;
+            case CHAR:
+                printf(fmt_val, *(char *)(placeHolder+(i*sizeof(char))));
                 break;
         }
     }
-
+    /*Printing the lower block boundary*/
     printf("|\n|");
     for(int i = 0; i < _no_of_blocks_; i++){
         printf("++++++++++++++++++|");
@@ -188,6 +309,7 @@ ERROR_TYPE_t print_ContiguousBlocks(void *placeHolder, VAR_TYPE_t var_type, size
 
     printf("\n");
 
+    /*Printing the address of the block(s)*/
     for(int i = 0; i < _no_of_blocks_; i++){
         if(var_type == ADDRESS){
             printf(fmt_addr, (((void**)placeHolder)+i));
@@ -199,12 +321,12 @@ ERROR_TYPE_t print_ContiguousBlocks(void *placeHolder, VAR_TYPE_t var_type, size
     printf("\n\n");
 
     return MEM_SUCCESS;
-
 }
+
 ERROR_TYPE_t memvis_PTP(int*** placeHolder, VAR_TYPE_t var_type){
 
     printf("\n\nREPRESENTATION OF POINTER(pp) HOLDING THE ADDRESS OF THE POINTER HOLDING"
-            "THE ADDRESS OF THE %s VARIABLE\n", gVarTypeArr[VAR_TYPE_PRINT_STRING]);
+            "THE ADDRESS OF THE %s VARIABLE\n", gVarInfoArr[BASE_VAR_TYPE_PRINT_STRING]);
     printf("++++++++++++++++++\n");
     printf("|%-16p| ==> pp\n",*placeHolder);
     printf("++++++++++++++++++\n");
@@ -225,7 +347,7 @@ ERROR_TYPE_t memvis_PTP(int*** placeHolder, VAR_TYPE_t var_type){
     return MEM_SUCCESS;
 }
 
-ERROR_TYPE_t memvis_uint32(uint32_t* value){
+ERROR_TYPE_t memvis_int(int* value){
 
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
     printf("I am Little Endian\n");
@@ -235,12 +357,7 @@ ERROR_TYPE_t memvis_uint32(uint32_t* value){
     printf("The value is = 0x%x\n\n", *value);
     char *ch = (char*)value;
     printf("My Starting Address : %p\n\n", value);
-    printf("++++++++++++++++++");printf("|+++++++++++++++++");printf("|+++++++++++++++++");printf("|+++++++++++++++++++\n");
-    printf("| 0x%-14x",*(ch++));printf("| 0x%-14x",*(ch++));printf("| 0x%-14x",*(ch++));printf("| 0x%-14x |\n",(*ch));
-    printf("++++++++++++++++++");printf("|+++++++++++++++++");printf("|+++++++++++++++++");printf("|+++++++++++++++++++\n");
-    ch -= 3;
-    printf("0x%-17p", ch++);printf("0x%-16p", ch++);printf("0x%-16p", ch++);printf("0x%-17p\n\n\n", ch);
-
+    PrintOneByteBlocks(ch, INTEGER, sizeof(int));
 }
 
 /**
@@ -255,19 +372,30 @@ ERROR_TYPE_t memvis_uint32(uint32_t* value){
  **/
 ERROR_TYPE_t memvis(void* placeHolder, VAR_TYPE_t var_type, size_t _no_of_blocks_){
 
-    ERROR_TYPE_t retVal = MEM_ERR_UNINITIALIZED;
-    if(set_gVarTypeArr(var_type) != MEM_SUCCESS){
-        unset_gVarTypeArr();
+    ERROR_TYPE_t retVal = MEM_ERR_NONE;
+    if(placeHolder == NULL){
+        retVal = MEM_ERR_NULL;
+        return retVal;
+    }
+    if(set_gVarArrays(var_type) != MEM_SUCCESS){
+        unset_gVarArrays();
         printf("[MEMVIS] Invalid VAR_TYPE\n");
         return MEM_ERR_SET_GLOB_ARR_FAILURE;
     }
-    printf("\n--------------------MEMVIS REPRESENTATION START--------------------\n\n");
+    printf("\n--------------------MEMVIS REPRESENTATION START--------------------\n");
+    printf("MEMVIS VAR TYPE: %s\n", gVarInfoArr[VAR_TYPE_PRINT_STRING]);
     switch(var_type){
     case INTEGER_ARRAY:
         retVal = memvis_array(placeHolder, var_type, _no_of_blocks_);
         break;
+    case CHAR_ARRAY:
+        retVal = memvis_array(placeHolder, var_type, _no_of_blocks_);
+        break;
     case INTEGER:
-        retVal = memvis_uint32((uint32_t*)placeHolder);
+        retVal = memvis_int((int*)placeHolder);
+        break;
+    case CHAR:
+        retVal = PrintContiguousBlocks((char*)placeHolder, CHAR, 1);
         break;
     case POINTER_TO_POINTER_TO_INTEGER:
         retVal = memvis_PTP((int***)placeHolder, var_type);
@@ -279,7 +407,7 @@ ERROR_TYPE_t memvis(void* placeHolder, VAR_TYPE_t var_type, size_t _no_of_blocks
         printf("[MEMVIS] Error: UNIMPLEMENTED!!, Returning\n");
         retVal = MEM_ERR_UNIMPLEMENTED;
     }
-    unset_gVarTypeArr();
-    printf("\n--------------------MEMVIS REPRESENTATION END----------------------\n\n");
+    unset_gVarArrays();
+    printf("\n--------------------MEMVIS REPRESENTATION END----------------------\n");
     return retVal;
 }
